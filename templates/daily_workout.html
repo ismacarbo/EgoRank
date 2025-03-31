@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Workout Giornaliero - Ego Rank{% endblock %}
+{% block content %}
+    <h1 class="text-center">Workout Giornaliero</h1>
+    {% if workout_completed %}
+        <div class="alert alert-success text-center">
+            Hai già completato il workout di oggi!
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            Esegui il workout di oggi per guadagnare 10 monete!
+        </div>
+        <p>
+            <strong>Workout personalizzato:</strong><br>
+            - 3 serie di push-up<br>
+            - 3 serie di squat<br>
+            - 3 serie di addominali
+        </p>
+        <form method="POST" action="{{ url_for('daily_workout') }}">
+            <button type="submit" class="btn btn-primary">Completa Workout</button>
+        </form>
+    {% endif %}
+{% endblock %}

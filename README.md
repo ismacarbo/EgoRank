@@ -1,114 +1,114 @@
 # 💪 Ego Rank
 
-**Ego Rank** è una web app gamificata per chi va in palestra: permette di confrontare i propri sollevamenti (bench press, squat, deadlift) con quelli degli amici in una classifica a tema "rank", con titoli come *Novizio*, *Gladiatore*, *Campione* ed *Eroe*.  
-Ogni utente può tenere traccia dei propri progressi, ricevere previsioni sul tempo stimato per salire di rango e accedere tramite login classico o Google.
+**Ego Rank** is a gamified web app for gym lovers. It lets you track and compare your main lifts (bench press, squat, deadlift) with your friends in a public leaderboard with themed titles like *Novice*, *Gladiator*, *Champion*, and *Hero*.  
+Each user can monitor their progress, receive weekly progression forecasts, and log in using classic credentials or Google OAuth.
 
 ---
 
-## 🚀 Funzionalità
+## 🚀 Features
 
-- 👤 Registrazione e login (username/password + Google OAuth)
-- 📊 Gestione dei sollevamenti per esercizio (bench, squat, deadlift)
-- 🏆 Classifiche pubbliche per ogni esercizio
-- 🔮 Previsioni di progressione settimanale con stima del prossimo rango
-- 🔐 Account e dati salvati su database MongoDB
-- 📈 Dashboard personale con visualizzazione ranking
-
----
-
-## 🛠️ Tecnologie utilizzate
-
-- **Flask** - Backend web framework (Python)
-- **MongoDB** - Database NoSQL per la persistenza dei dati
-- **Flask-Login** - Gestione delle sessioni utente
-- **Flask-Dance** - Integrazione con Google OAuth
-- **Werkzeug** - Hashing sicuro delle password
-- **Bootstrap 4** - Interfaccia responsive e pulita
+- 👤 Registration and login (username/password + Google OAuth)
+- 📊 Manage lifts per exercise (bench, squat, deadlift)
+- 🏆 Public leaderboard for each exercise
+- 🔮 Weekly progression forecasts with estimated time to next rank
+- 🔐 Account and data stored in MongoDB
+- 📈 Personal dashboard with ranking view
 
 ---
 
-## 📦 Installazione e avvio (locale)
+## 🛠️ Technologies Used
 
-### Prerequisiti
+- **Flask** - Web backend framework (Python)
+- **MongoDB** - NoSQL database for data storage
+- **Flask-Login** - Session and user management
+- **Flask-Dance** - Google OAuth integration
+- **Werkzeug** - Secure password hashing
+- **Bootstrap 4** - Responsive and clean UI
 
-- Python 3.8+ (consigliato)
-- MongoDB attivo in locale (`mongodb://localhost:27017`)
-- Client ID e Secret di Google per OAuth 2.0
+---
 
-### Passaggi
+## 📦 Local Installation & Setup
 
-1. **Clona la repository**
+### Prerequisites
+
+- Python 3.8+ (recommended)
+- MongoDB running locally (`mongodb://localhost:27017`)
+- Google Client ID and Secret for OAuth 2.0
+
+### Steps
+
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/tuo-utente/ego-rank.git
+   git clone https://github.com/your-username/ego-rank.git
    cd ego-rank
    ```
 
-2. **Installa le dipendenze**
+2. **Install the dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Configura Google OAuth**
+3. **Configure Google OAuth**
 
-   Registra la tua app su [Google Developers Console](https://console.developers.google.com/) e ottieni:
+   Register your app at [Google Developers Console](https://console.developers.google.com/) and get:
 
    - `GOOGLE_CLIENT_ID`
    - `GOOGLE_CLIENT_SECRET`
 
-   Inseriscili nel file `app.py`:
+   Add them in `app.py`:
    ```python
    client_id="YOUR_GOOGLE_CLIENT_ID",
    client_secret="YOUR_GOOGLE_CLIENT_SECRET",
    ```
 
-4. **Avvia il server Flask**
+4. **Run the Flask server**
    ```bash
    python app.py
    ```
 
-5. **Apri nel browser**
+5. **Open in your browser**
    ```
    http://127.0.0.1:5000
    ```
 
 ---
 
-## 📁 File principali
+## 📁 Main Files
 
-| File/Cartella         | Descrizione                                  |
-|-----------------------|----------------------------------------------|
-| `app.py`              | Logica del server Flask e routing principale |
-| `templates/`          | Pagine HTML (renderizzate da Flask)          |
-| `static/`             | (opzionale) File CSS/JS personalizzati       |
-| `README.md`           | Documentazione del progetto                   |
-| `requirements.txt`    | Librerie Python necessarie                   |
-
----
-
-## ✍️ Contribuire
-
-Se vuoi contribuire:
-
-1. Fai il fork del progetto
-2. Crea una nuova branch (`git checkout -b feat-nuova-funzionalita`)
-3. Fai il commit delle modifiche (`git commit -am 'Aggiunta nuova funzionalità'`)
-4. Push sul tuo fork (`git push origin feat-nuova-funzionalita`)
-5. Apri una Pull Request 🚀
+| File/Folder           | Description                                      |
+|-----------------------|--------------------------------------------------|
+| `app.py`              | Flask server logic and routing                   |
+| `templates/`          | HTML pages rendered by Flask                     |
+| `static/`             | (optional) Custom CSS/JS files                   |
+| `README.md`           | Project documentation                            |
+| `requirements.txt`    | Python dependencies                              |
 
 ---
 
-## 📄 Licenza
+## ✍️ Contributing
 
-Questo progetto è open-source e rilasciato sotto licenza **MIT**.
+To contribute:
+
+1. Fork the project
+2. Create a new branch (`git checkout -b feat-new-feature`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push to your fork (`git push origin feat-new-feature`)
+5. Open a Pull Request 🚀
 
 ---
 
-## 🙏 Ringraziamenti
+## 📄 License
 
-Grazie a tutti i frequentatori di palestra che vivono i propri progressi come un gioco: **Ego Rank** è per voi.
+This project is open-source and released under the **MIT License**.
 
 ---
 
-## ✨ Descrizione breve per GitHub
+## 🙏 Credits
 
-> Una web app per chi va in palestra, con ranking gamificato delle alzate (bench, squat, deadlift), previsioni di avanzamento e accesso con Google o account personale. 💪
+Special thanks to all gym enthusiasts who treat their progress like a game: **Ego Rank** is for you.
+
+---
+
+## ✨ Short Description for GitHub
+
+> A gamified web app for gym users to rank their lifts (bench, squat, deadlift), forecast progress, and log in via Google or username/password. 💪

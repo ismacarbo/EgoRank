@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Registrazione - Ego Rank{% endblock %}
+{% block content %}
+    <h2>Registrazione</h2>
+    <form method="POST" action="{{ url_for('register') }}">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" name="username" id="username" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" class="form-control" name="email" id="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" name="password" id="password" required>
+        </div>
+        <div class="form-group">
+            <label for="experience">Anni di esperienza</label>
+            <input type="number" class="form-control" name="experience" id="experience" required>
+        </div>
+        <div class="form-group">
+            <label for="gender">Sesso</label>
+            <select class="form-control" name="gender" id="gender" required>
+                <option value="maschio">Maschio</option>
+                <option value="femmina">Femmina</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="weight">Peso (kg)</label>
+            <input type="number" class="form-control" name="weight" id="weight" required>
+        </div>
+        <div class="form-group">
+            <label for="age">Età</label>
+            <input type="number" class="form-control" name="age" id="age" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Registrati</button>
+    </form>
+{% endblock %}

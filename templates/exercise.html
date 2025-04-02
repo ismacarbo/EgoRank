@@ -2,6 +2,15 @@
 {% block title %}{{ exercise_type|capitalize }} - Ego Rank{% endblock %}
 {% block content %}
     <h1 class="text-center">{{ exercise_type|capitalize }}</h1>
+    <h3 class="text-center">Your Level: {{ level }}</h3>
+    <div class="text-center mb-3">
+        <div class="progress" style="max-width: 400px; margin: 0 auto;">
+            <div class="progress-bar" role="progressbar" style="width: {{ progress }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+                {{ progress|round(0) }}%
+            </div>
+        </div>
+        <p>{{ xp_to_next }} XP needed for the next level.</p>
+    </div>
     {% if forecast_message %}
     <div class="alert alert-info text-center">
         {{ forecast_message }}
@@ -9,19 +18,20 @@
     {% endif %}
     <form method="POST" action="{{ url_for('exercise', exercise=exercise_type) }}">
         <div class="form-group">
-            <label for="increment">Inserisci il miglioramento settimanale per {{ exercise_type|capitalize }}:</label>
+            <label for="increment">Enter your weekly improvement for {{ exercise_type|capitalize }}:</label>
             <input type="number" step="0.1" class="form-control" name="increment" id="increment" required>
         </div>
-        <button type="submit" class="btn btn-primary">Aggiorna progressione</button>
+        <button type="submit" class="btn btn-primary">Update Progression</button>
     </form>
-    <h3 class="mt-4">Classifica per {{ exercise_type|capitalize }}</h3>
+    <h3 class="mt-4">Ranking for {{ exercise_type|capitalize }}</h3>
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Posizione</th>
+                <th>Position</th>
                 <th>Username</th>
-                <th>Punteggio</th>
-                <th>Titolo</th>
+                <th>Score</th>
+                <th>Title</th>
+                <th>Level</th>
             </tr>
         </thead>
         <tbody>
@@ -31,6 +41,7 @@
                 <td>{{ user.username }}</td>
                 <td>{{ user.score }}</td>
                 <td>{{ user.title }}</td>
+                <td>{{ user.level }}</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -1,23 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Workout Giornaliero - Ego Rank{% endblock %}
+{% block title %}Daily Workout - Ego Rank{% endblock %}
 {% block content %}
-    <h1 class="text-center">Workout Giornaliero</h1>
+    <h1 class="text-center">Daily Workout</h1>
     {% if workout_completed %}
         <div class="alert alert-success text-center">
-            Hai già completato il workout di oggi!
+            You have already completed today's workout!
         </div>
     {% else %}
-        <div class="alert alert-info text-center">
-            Esegui il workout di oggi per guadagnare 10 monete!
-        </div>
-        <p>
-            <strong>Workout personalizzato:</strong><br>
-            - 3 serie di push-up<br>
-            - 3 serie di squat<br>
-            - 3 serie di addominali
-        </p>
-        <form method="POST" action="{{ url_for('daily_workout') }}">
-            <button type="submit" class="btn btn-primary">Completa Workout</button>
-        </form>
+        {% if show_selection %}
+            <div class="alert alert-info text-center">
+                Select the muscle group you want to train today:
+            </div>
+            <form method="GET" action="{{ url_for('daily_workout') }}" class="text-center">
+                <div class="form-group">
+                    <label for="muscle">Muscle Group:</label>
+                    <select name="muscle" id="muscle" class="form-control" style="max-width: 300px; margin: 0 auto;">
+                        {% for muscle in allowed_muscles %}
+                            <option value="{{ muscle }}">{{ muscle|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Get Workout</button>
+            </form>
+        {% else %}
+            <div class="alert alert-info text-center">
+                Here are your suggested exercises:
+            </div>
+            {% if exercises %}
+                <ul>
+                    {% for exercise in exercises %}
+                        <li>
+                            <strong>{{ exercise.name }}</strong> - <em>{{ exercise.difficulty }}</em><br>
+                            <small>Muscle: {{ exercise.muscle }} | Equipment: {{ exercise.equipment }}</small><br>
+                            <p>{{ exercise.instructions }}</p>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>Unable to retrieve the workout, please try again later.</p>
+            {% endif %}
+            <form method="POST" action="{{ url_for('daily_workout') }}">
+                <button type="submit" class="btn btn-primary">Complete Workout</button>
+            </form>
+        {% endif %}
     {% endif %}
 {% endblock %}

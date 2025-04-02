@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Ego Rank{% endblock %}</title>
@@ -7,6 +7,18 @@
     <style>
         body { background-color: #f8f9fa; }
         .container { margin-top: 50px; }
+        /* Tooltip style */
+        #tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 5px 8px;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 0.9em;
+            display: none;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
@@ -19,10 +31,13 @@
                     <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('daily_workout') }}">Workout Giornaliero</a>
+                    <a class="nav-link" href="{{ url_for('daily_workout') }}">Daily Workout</a>
                 </li>
                 <li class="nav-item">
-                    <span class="navbar-text">Monete: {{ current_user.coins }}</span>
+                    <a class="nav-link" href="{{ url_for('progressions') }}">Progressions</a>
+                </li>
+                <li class="nav-item">
+                    <span class="navbar-text">Coins: {{ current_user.coins }}</span>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -32,7 +47,7 @@
                     <a class="nav-link" href="{{ url_for('login') }}">Login</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('register') }}">Registrati</a>
+                    <a class="nav-link" href="{{ url_for('register') }}">Register</a>
                 </li>
                 {% endif %}
             </ul>
@@ -50,5 +65,7 @@
         {% endwith %}
         {% block content %}{% endblock %}
     </div>
+    <!-- Tooltip div -->
+    <div id="tooltip"></div>
 </body>
 </html>

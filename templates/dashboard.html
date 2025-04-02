@@ -2,21 +2,33 @@
 {% block title %}Dashboard - Ego Rank{% endblock %}
 {% block content %}
     <h1 class="text-center">Dashboard</h1>
-    <h3>Le tue informazioni</h3>
+    <h3>Your Information</h3>
     <p><strong>Username:</strong> {{ current_user.username }}</p>
     <p><strong>Email:</strong> {{ current_user.email }}</p>
-    <p><strong>Anni di esperienza:</strong> {{ current_user.experience }}</p>
-    <p><strong>Sesso:</strong> {{ current_user.gender }}</p>
-    <p><strong>Peso:</strong> {{ current_user.weight }} kg</p>
-    <p><strong>Età:</strong> {{ current_user.age }}</p>
-    <h3 class="mt-4">Classifica Globale Bench Press</h3>
+    <p><strong>Years of Experience:</strong> {{ current_user.experience }}</p>
+    <p><strong>Gender:</strong> {{ current_user.gender }}</p>
+    <p><strong>Weight:</strong> {{ current_user.weight }} kg</p>
+    <p><strong>Age:</strong> {{ current_user.age }}</p>
+    <p><strong>Coins:</strong> {{ current_user.coins }}</p>
+    
+    <h3 class="mt-4">Your Level</h3>
+    <p><strong>Level:</strong> {{ level }}</p>
+    <div class="progress mb-3">
+        <div class="progress-bar" role="progressbar" style="width: {{ progress }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+            {{ progress|round(0) }}%
+        </div>
+    </div>
+    <p>{{ xp_to_next }} XP needed to reach the next level.</p>
+    
+    <h3 class="mt-4">Global Ranking - Bench Press</h3>
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Posizione</th>
+                <th>Position</th>
                 <th>Username</th>
-                <th>Punteggio</th>
-                <th>Titolo</th>
+                <th>Score</th>
+                <th>Title</th>
+                <th>Level</th>
             </tr>
         </thead>
         <tbody>
@@ -26,13 +38,14 @@
                 <td>{{ user.username }}</td>
                 <td>{{ user.score }}</td>
                 <td>{{ user.title }}</td>
+                <td>{{ user.level }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     <div class="text-center mt-4">
-        <a class="btn btn-primary" href="{{ url_for('exercise', exercise='bench') }}">Progressioni Bench Press</a>
-        <a class="btn btn-secondary" href="{{ url_for('exercise', exercise='squat') }}">Progressioni Squat</a>
-        <a class="btn btn-success" href="{{ url_for('exercise', exercise='deadlift') }}">Progressioni Deadlift</a>
+        <a class="btn btn-primary" href="{{ url_for('exercise', exercise='bench') }}">Bench Press Progression</a>
+        <a class="btn btn-secondary" href="{{ url_for('exercise', exercise='squat') }}">Squat Progression</a>
+        <a class="btn btn-success" href="{{ url_for('exercise', exercise='deadlift') }}">Deadlift Progression</a>
     </div>
 {% endblock %}

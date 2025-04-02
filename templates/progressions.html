@@ -1,0 +1,126 @@
+<script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js"
+      }
+    }
+    </script>
+    {% extends "base.html" %}
+    {% block title %}Progressions - Ego Rank{% endblock %}
+    {% block content %}
+    <h1 class="text-center">Muscle Group Progressions</h1>
+    <p class="text-center">Hover over a muscle group on the model to see your current rank.</p>
+    <div id="model-container" style="width: 100%; height: 600px;"></div>
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/OrbitControls.js';
+      import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+    
+      const container = document.getElementById('model-container');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xe0e0e0);
+    
+      const camera = new THREE.PerspectiveCamera(
+          45, 
+          container.clientWidth / container.clientHeight, 
+          0.1, 
+          1000
+      );
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+    
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(10, 10, 10);
+      scene.add(directionalLight);
+    
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+    
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+      const muscleRanks = {{ muscle_ranks|tojson }};
+    
+      function showTooltip(text, x, y) {
+          const tooltip = document.getElementById('tooltip');
+          tooltip.style.left = x + 'px';
+          tooltip.style.top = y + 'px';
+          tooltip.innerHTML = text;
+          tooltip.style.display = 'block';
+      }
+    
+      function hideTooltip() {
+          const tooltip = document.getElementById('tooltip');
+          tooltip.style.display = 'none';
+      }
+    
+      let modelPath = "";
+      if ("{{ gender|lower }}" === "male") {
+          modelPath = "{{ url_for('static', filename='models/male_body.glb') }}";
+      } else {
+          modelPath = "{{ url_for('static', filename='models/female_body.glb') }}";
+      }
+    
+      const loader = new GLTFLoader();
+      loader.load(
+          modelPath,
+          function(gltf) {
+              const model = gltf.scene;
+              scene.add(model);
+    
+              const box = new THREE.Box3().setFromObject(model);
+              const center = box.getCenter(new THREE.Vector3());
+              const size = box.getSize(new THREE.Vector3());
+              
+              model.position.x += (model.position.x - center.x);
+              model.position.y += (model.position.y - center.y);
+              model.position.z += (model.position.z - center.z);
+              
+              const maxDim = Math.max(size.x, size.y, size.z);
+              model.scale.multiplyScalar(1.0 / maxDim);
+    
+              camera.position.set(0, 1.5, 3);
+              controls.target.set(0, 0, 0);
+              controls.update();
+    
+              animate();
+          },
+          undefined,
+          function(error) {
+              console.error('Error loading model:', error);
+          }
+      );
+    
+      function animate() {
+          requestAnimationFrame(animate);
+          controls.update();
+          renderer.render(scene, camera);
+      }
+    
+      renderer.domElement.addEventListener('mousemove', function(event) {
+          const rect = renderer.domElement.getBoundingClientRect();
+          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+          
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(scene.children, true);
+          if (intersects.length > 0) {
+              const intersected = intersects[0].object;
+              if (muscleRanks[intersected.name]) {
+                  showTooltip(
+                      intersected.name.toUpperCase() + ': ' + muscleRanks[intersected.name], 
+                      event.clientX + 10, 
+                      event.clientY + 10
+                  );
+              } else {
+                  hideTooltip();
+              }
+          } else {
+              hideTooltip();
+          }
+      });
+    </script>
+    {% endblock %}
+        

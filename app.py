@@ -1,6 +1,8 @@
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 import math
+import random
+import requests
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_pymongo import PyMongo
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -10,36 +12,35 @@ from flask_dance.contrib.google import make_google_blueprint, google
 from datetime import date
 
 app = Flask(__name__)
-app.secret_key = 'la_tua_chiave_segreta'
+app.secret_key = 'your_secret_key'
 
-# Configurazione MongoDB (assicurati che MongoDB sia in esecuzione)
+# MongoDB configuration
 app.config["MONGO_URI"] = "mongodb://localhost:27017/ego_rank_db"
 mongo = PyMongo(app)
 
-# Configurazione Flask-Login
+# Flask-Login configuration
 login_manager = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 
-# Configurazione Flask-Dance per Google OAuth con scope aggiornati
+# Flask-Dance configuration for Google OAuth
 google_bp = make_google_blueprint(
     client_id="289731328884-dld5r01gflkbnaq6egao74icoc44d08v.apps.googleusercontent.com",
     client_secret="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",
     scope=["openid", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"],
     redirect_url="http://localhost:5000/login/google/authorized"
 )
-
 app.register_blueprint(google_bp, url_prefix="/login")
 
 def get_title(score):
     if score < 50:
-        return "Novizio"
+        return "Novice"
     elif score < 100:
-        return "Gladiatore"
+        return "Gladiator"
     elif score < 150:
-        return "Campione"
+        return "Champion"
     else:
-        return "Eroe"
+        return "Hero"
 
 def next_threshold(score):
     if score < 50:
@@ -51,7 +52,37 @@ def next_threshold(score):
     else:
         return None
 
-# Classe User per Flask-Login
+def compute_level(xp):
+    """
+    Calculate the level based on XP.
+    Every 100 XP constitutes one level.
+    Returns a tuple: (level, progress percentage, XP needed for next level).
+    """
+    level = xp // 100 + 1
+    current_level_xp = xp % 100
+    xp_to_next = 100 - current_level_xp
+    progress = (current_level_xp / 100) * 100
+    return level, progress, xp_to_next
+
+def get_exercises(muscle):
+    """
+    Fetches exercises from the API for the given muscle.
+    Returns a list of up to 3 random exercises.
+    """
+    API_KEY = "YOUR_API_KEY"  # Replace with your actual API key
+    headers = {'X-Api-Key': API_KEY}
+    api_url = f'https://api.api-ninjas.com/v1/exercises?muscle={muscle}'
+    response = requests.get(api_url, headers=headers)
+    if response.status_code == 200:
+        exercises = response.json()
+        if len(exercises) > 3:
+            exercises = random.sample(exercises, 3)
+        return exercises
+    else:
+        print("Error fetching exercises for", muscle, response.status_code, response.text)
+        return []
+
+# User class for Flask-Login
 class User(UserMixin):
     def __init__(self, user_data):
         self.id = str(user_data['_id'])
@@ -61,8 +92,11 @@ class User(UserMixin):
         self.gender = user_data.get('gender')
         self.weight = user_data.get('weight')
         self.age = user_data.get('age')
+        # In this example, we assume that the "lifts" field contains keys for bench, squat, deadlift.
+        # For the progressions page we map them to "chest", "legs" and "back".
         self.lifts = user_data.get('lifts', {'bench': 0, 'squat': 0, 'deadlift': 0})
         self.coins = user_data.get('coins', 0)
+        self.xp = user_data.get('xp', 0)
         self.last_workout = user_data.get('last_workout')
 
 @login_manager.user_loader
@@ -72,12 +106,10 @@ def load_user(user_id):
         return User(user_data)
     return None
 
-# Rotta home (landing page)
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# Registrazione
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -89,9 +121,8 @@ def register():
         weight     = request.form.get("weight")
         age        = request.form.get("age")
         
-        # Verifica se esiste già un utente con lo stesso username
         if mongo.db.users.find_one({"username": username}):
-            flash("Username già esistente, scegline un altro")
+            flash("Username already exists, please choose another.")
             return redirect(url_for("register"))
         
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256", salt_length=8)
@@ -115,15 +146,15 @@ def register():
             "weight": weight,
             "age": age,
             "lifts": lifts,
-            "coins": 0,             # Nuovo campo: saldo iniziale di monete
-            "last_workout": None    # Campo per tracciare il completamento giornaliero
+            "coins": 0,
+            "xp": 0,
+            "last_workout": None
         }
         mongo.db.users.insert_one(user_doc)
-        flash("Registrazione completata, adesso effettua il login")
+        flash("Registration successful! Please log in.")
         return redirect(url_for("login"))
     return render_template("register.html")
 
-# Login con username e password
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -133,21 +164,20 @@ def login():
         if user_doc and check_password_hash(user_doc["password"], password):
             user = User(user_doc)
             login_user(user)
-            flash("Accesso effettuato correttamente")
+            flash("Logged in successfully.")
             return redirect(url_for("dashboard"))
         else:
-            flash("Username o password errati")
+            flash("Incorrect username or password.")
             return redirect(url_for("login"))
     return render_template("login.html")
 
-# Login con Google
 @app.route("/google_login")
 def google_login():
     if not google.authorized:
         return redirect(url_for("google.login"))
     resp = google.get("/oauth2/v2/userinfo")
     if not resp.ok:
-        flash("Errore durante il recupero delle informazioni da Google")
+        flash("Error retrieving information from Google.")
         return redirect(url_for("login"))
     google_info = resp.json()
     email = google_info.get("email")
@@ -164,24 +194,23 @@ def google_login():
             "age": "0",
             "lifts": {"bench": 0, "squat": 0, "deadlift": 0},
             "coins": 0,
+            "xp": 0,
             "last_workout": None
         }
         result = mongo.db.users.insert_one(user_doc)
         user_doc["_id"] = result.inserted_id
     user = User(user_doc)
     login_user(user)
-    flash("Accesso con Google effettuato correttamente")
+    flash("Logged in with Google successfully.")
     return redirect(url_for("dashboard"))
 
-# Logout
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
-    flash("Logout effettuato correttamente")
+    flash("Logged out successfully.")
     return redirect(url_for("index"))
 
-# Dashboard: visualizza le informazioni personali e una classifica globale (es. basata sul Bench Press)
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -189,15 +218,20 @@ def dashboard():
     ranking_users = []
     for u in users_cursor:
         score = u.get("lifts", {}).get("bench", 0)
+        xp = u.get("xp", 0)
+        level, _, _ = compute_level(xp)
         ranking_users.append({
             "username": u.get("username"),
             "score": score,
-            "title": get_title(score)
+            "title": get_title(score),
+            "level": level
         })
     ranking_users = sorted(ranking_users, key=lambda x: x["score"], reverse=True)
-    return render_template("dashboard.html", ranking_users=ranking_users)
+    
+    current_level, progress, xp_to_next = compute_level(current_user.xp)
+    
+    return render_template("dashboard.html", ranking_users=ranking_users, level=current_level, progress=progress, xp_to_next=xp_to_next)
 
-# Pagina per gestire le progressioni settimanali per ciascun esercizio
 @app.route("/exercise", methods=["GET", "POST"])
 @login_required
 def exercise():
@@ -219,49 +253,39 @@ def exercise():
             {"_id": ObjectId(current_user.id)},
             {"$set": {f"lifts.{exercise_type}": new_score}}
         )
-        user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
         nt = next_threshold(new_score)
         if nt is not None and increment > 0:
             weeks = math.ceil((nt - new_score) / increment)
             forecast_message = (
-                f"Con un incremento settimanale di {increment}, "
-                f"raggiungerai il prossimo rango ({get_title(nt)}) in circa {weeks} settimana(e)."
+                f"With a weekly increment of {increment}, you'll reach the next rank ({get_title(nt)}) in about {weeks} week(s)."
             )
         else:
-            forecast_message = "Hai raggiunto il rango massimo o l'incremento inserito non permette una previsione."
+            forecast_message = "You've reached the maximum rank or the entered increment doesn't allow a prediction."
     
     users_cursor = mongo.db.users.find()
     ranking_users = []
     for u in users_cursor:
         score = u.get("lifts", {}).get(exercise_type, 0)
+        xp = u.get("xp", 0)
+        level, _, _ = compute_level(xp)
         ranking_users.append({
             "username": u.get("username"),
             "score": score,
-            "title": get_title(score)
+            "title": get_title(score),
+            "level": level
         })
     ranking_users = sorted(ranking_users, key=lambda x: x["score"], reverse=True)
+    
+    current_level, progress, xp_to_next = compute_level(current_user.xp)
     
     return render_template("exercise.html",
                            exercise_type=exercise_type,
                            ranking_users=ranking_users,
-                           forecast_message=forecast_message)
+                           forecast_message=forecast_message,
+                           level=current_level,
+                           progress=progress,
+                           xp_to_next=xp_to_next)
 
-# (Opzionale) API per ottenere la classifica globale (esempio basato sul Bench)
-@app.route("/api/rankings")
-def rankings():
-    users_cursor = mongo.db.users.find()
-    ranking_users = []
-    for u in users_cursor:
-        score = u.get("lifts", {}).get("bench", 0)
-        ranking_users.append({
-            "username": u.get("username"),
-            "score": score,
-            "title": get_title(score)
-        })
-    ranking_users = sorted(ranking_users, key=lambda x: x["score"], reverse=True)
-    return jsonify(ranking_users)
-
-# Nuova rotta per il workout giornaliero
 @app.route("/daily_workout", methods=["GET", "POST"])
 @login_required
 def daily_workout():
@@ -272,18 +296,49 @@ def daily_workout():
     if request.method == "POST":
         if not workout_completed:
             coins_reward = 10
+            xp_reward = 10
             new_coins = user_doc.get("coins", 0) + coins_reward
+            new_xp = user_doc.get("xp", 0) + xp_reward
             mongo.db.users.update_one(
                 {"_id": ObjectId(current_user.id)},
-                {"$set": {"coins": new_coins, "last_workout": today}}
+                {"$set": {"coins": new_coins, "xp": new_xp, "last_workout": today}}
             )
-            flash(f"Workout completato! Hai guadagnato {coins_reward} monete.")
+            flash(f"Workout completed! You earned {coins_reward} coins and {xp_reward} XP.")
             return redirect(url_for("daily_workout"))
         else:
-            flash("Hai già completato il workout di oggi.")
+            flash("You have already completed today's workout.")
             return redirect(url_for("daily_workout"))
     
-    return render_template("daily_workout.html", workout_completed=workout_completed)
+    # GET: if not completed, allow the user to select the muscle group to train.
+    selected_muscle = request.args.get("muscle")
+    allowed_muscles = ["chest", "back", "biceps", "triceps", "legs", "shoulders", "abs"]
+    exercises = None
+    if not selected_muscle or selected_muscle.lower() not in allowed_muscles:
+        show_selection = True
+    else:
+        show_selection = False
+        exercises = get_exercises(selected_muscle.lower())
+    
+    return render_template("daily_workout.html", workout_completed=workout_completed, exercises=exercises, show_selection=show_selection, allowed_muscles=allowed_muscles)
+
+@app.route("/progressions")
+@login_required
+def progressions():
+    # Mapping of muscle groups from user lifts
+    muscle_progress = {
+         "chest": current_user.lifts.get("bench", 0),
+         "legs": current_user.lifts.get("squat", 0),
+         "back": current_user.lifts.get("deadlift", 0),
+         "biceps": 0,
+         "triceps": 0,
+         "shoulders": 0,
+         "abs": 0
+    }
+    muscle_ranks = {}
+    for muscle, score in muscle_progress.items():
+         muscle_ranks[muscle] = get_title(score)
+    
+    return render_template("progressions.html", muscle_ranks=muscle_ranks, gender=current_user.gender)
 
 if __name__ == "__main__":
     app.run(debug=True)

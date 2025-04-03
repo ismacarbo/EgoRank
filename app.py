@@ -53,11 +53,6 @@ def next_threshold(score):
         return None
 
 def compute_level(xp):
-    """
-    Calculate the level based on XP.
-    Every 100 XP constitutes one level.
-    Returns a tuple: (level, progress percentage, XP needed for next level).
-    """
     level = xp // 100 + 1
     current_level_xp = xp % 100
     xp_to_next = 100 - current_level_xp
@@ -65,11 +60,7 @@ def compute_level(xp):
     return level, progress, xp_to_next
 
 def get_exercises(muscle):
-    """
-    Fetches exercises from the API for the given muscle.
-    Returns a list of up to 3 random exercises.
-    """
-    API_KEY = "YOUR_API_KEY"  # Replace with your actual API key
+    API_KEY = "YOUR_API_KEY"  # Sostituisci con la tua chiave API effettiva
     headers = {'X-Api-Key': API_KEY}
     api_url = f'https://api.api-ninjas.com/v1/exercises?muscle={muscle}'
     response = requests.get(api_url, headers=headers)
@@ -82,7 +73,6 @@ def get_exercises(muscle):
         print("Error fetching exercises for", muscle, response.status_code, response.text)
         return []
 
-# User class for Flask-Login
 class User(UserMixin):
     def __init__(self, user_data):
         self.id = str(user_data['_id'])
@@ -92,8 +82,6 @@ class User(UserMixin):
         self.gender = user_data.get('gender')
         self.weight = user_data.get('weight')
         self.age = user_data.get('age')
-        # In this example, we assume that the "lifts" field contains keys for bench, squat, deadlift.
-        # For the progressions page we map them to "chest", "legs" and "back".
         self.lifts = user_data.get('lifts', {'bench': 0, 'squat': 0, 'deadlift': 0})
         self.coins = user_data.get('coins', 0)
         self.xp = user_data.get('xp', 0)
@@ -309,7 +297,6 @@ def daily_workout():
             flash("You have already completed today's workout.")
             return redirect(url_for("daily_workout"))
     
-    # GET: if not completed, allow the user to select the muscle group to train.
     selected_muscle = request.args.get("muscle")
     allowed_muscles = ["chest", "back", "biceps", "triceps", "legs", "shoulders", "abs"]
     exercises = None
@@ -324,7 +311,7 @@ def daily_workout():
 @app.route("/progressions")
 @login_required
 def progressions():
-    # Mapping of muscle groups from user lifts
+    # Mappiamo i gruppi muscolari dai dati dell'utente
     muscle_progress = {
          "chest": current_user.lifts.get("bench", 0),
          "legs": current_user.lifts.get("squat", 0),
@@ -336,7 +323,10 @@ def progressions():
     }
     muscle_ranks = {}
     for muscle, score in muscle_progress.items():
-         muscle_ranks[muscle] = get_title(score)
+         if score > 0:
+             muscle_ranks[muscle] = get_title(score)
+         else:
+             muscle_ranks[muscle] = "rank ancora da effettuare"
     
     return render_template("progressions.html", muscle_ranks=muscle_ranks, gender=current_user.gender)
 

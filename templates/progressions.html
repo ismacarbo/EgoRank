@@ -1,126 +1,204 @@
-<script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js"
-      }
+{% extends "base.html" %}
+{% block title %}Progressions - Ego Rank{% endblock %}
+{% block content %}
+  <h1 class="text-center">Muscle Group Progressions</h1>
+  <p class="text-center">Hover over a muscle group on the model to see your current rank.</p>
+  <div id="model-container" style="width: 100%; height: 600px;"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/OrbitControls.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+
+    // Selezione del container e creazione di scena, camera e renderer
+    const container = document.getElementById('model-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xe0e0e0);
+
+    const camera = new THREE.PerspectiveCamera(
+      45, 
+      container.clientWidth / container.clientHeight, 
+      0.1, 
+      1000
+    );
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    // Aggiunta luci
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 10);
+    scene.add(directionalLight);
+
+    // Controlli: blocchiamo zoom e pan, e limitiamo la rotazione solo all’asse verticale
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enableZoom = false;
+    controls.enablePan = false;
+    // Fissiamo la polar angle per bloccare la camera all'altezza del modello
+    // (ad es. 1.3 ~ 74.5°, regola in base alle tue preferenze)
+    controls.minPolarAngle = 1.3;
+    controls.maxPolarAngle = 1.3;
+    // Limitiamo l’azimuth a +/- 90° per mostrare fronte e schiena
+    controls.minAzimuthAngle = -Math.PI / 2;
+    controls.maxAzimuthAngle = Math.PI / 2;
+
+    // Raycaster per il rilevamento del mouse sulle aree interattive
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Dizionario dei rank per i muscoli, passato dal backend (es. {"chest": "Novice", ...})
+    const muscleRanks = {{ muscle_ranks|tojson }};
+
+    // Funzioni per mostrare/nascondere il tooltip
+    function showTooltip(text, x, y) {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+      tooltip.innerHTML = text;
+      tooltip.style.display = 'block';
     }
-    </script>
-    {% extends "base.html" %}
-    {% block title %}Progressions - Ego Rank{% endblock %}
-    {% block content %}
-    <h1 class="text-center">Muscle Group Progressions</h1>
-    <p class="text-center">Hover over a muscle group on the model to see your current rank.</p>
-    <div id="model-container" style="width: 100%; height: 600px;"></div>
-    <script type="module">
-      import * as THREE from 'three';
-      import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/OrbitControls.js';
-      import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
-    
-      const container = document.getElementById('model-container');
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xe0e0e0);
-    
-      const camera = new THREE.PerspectiveCamera(
-          45, 
-          container.clientWidth / container.clientHeight, 
-          0.1, 
-          1000
-      );
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      container.appendChild(renderer.domElement);
-    
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-      scene.add(ambientLight);
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      directionalLight.position.set(10, 10, 10);
-      scene.add(directionalLight);
-    
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-    
-      const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();
-      const muscleRanks = {{ muscle_ranks|tojson }};
-    
-      function showTooltip(text, x, y) {
-          const tooltip = document.getElementById('tooltip');
-          tooltip.style.left = x + 'px';
-          tooltip.style.top = y + 'px';
-          tooltip.innerHTML = text;
-          tooltip.style.display = 'block';
-      }
-    
-      function hideTooltip() {
-          const tooltip = document.getElementById('tooltip');
-          tooltip.style.display = 'none';
-      }
-    
-      let modelPath = "";
-      if ("{{ gender|lower }}" === "male") {
-          modelPath = "{{ url_for('static', filename='models/male_body.glb') }}";
-      } else {
-          modelPath = "{{ url_for('static', filename='models/female_body.glb') }}";
-      }
-    
-      const loader = new GLTFLoader();
-      loader.load(
-          modelPath,
-          function(gltf) {
-              const model = gltf.scene;
-              scene.add(model);
-    
-              const box = new THREE.Box3().setFromObject(model);
-              const center = box.getCenter(new THREE.Vector3());
-              const size = box.getSize(new THREE.Vector3());
-              
-              model.position.x += (model.position.x - center.x);
-              model.position.y += (model.position.y - center.y);
-              model.position.z += (model.position.z - center.z);
-              
-              const maxDim = Math.max(size.x, size.y, size.z);
-              model.scale.multiplyScalar(1.0 / maxDim);
-    
-              camera.position.set(0, 1.5, 3);
-              controls.target.set(0, 0, 0);
-              controls.update();
-    
-              animate();
+    function hideTooltip() {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.style.display = 'none';
+    }
+
+    // Determiniamo il genere (convertendo "maschio" in "male" se serve)
+    let userGender = "{{ gender|lower }}";
+    if (userGender === "maschio") {
+      userGender = "male";
+    }
+    let modelPath = "";
+    if (userGender === "male") {
+      modelPath = "{{ url_for('static', filename='models/male_body.glb') }}";
+    } else {
+      modelPath = "{{ url_for('static', filename='models/female_body.glb') }}";
+    }
+
+    // Caricamento del modello 3D
+    const loader = new GLTFLoader();
+    loader.load(
+      modelPath,
+      function(gltf) {
+        const model = gltf.scene;
+        scene.add(model);
+
+        // Centriamo il modello in base al suo bounding box
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        // Sposta il modello in modo che il centro sia all'origine (0,0,0)
+        model.position.sub(center);
+
+        // Creiamo un gruppo per le aree interattive
+        const interactiveGroup = new THREE.Group();
+        model.add(interactiveGroup);
+
+        // Definiamo manualmente le aree interattive (valori di esempio!)
+        // Puoi regolare "position" e "size" in base al tuo modello
+        const interactiveAreasData = [
+          {
+            name: "shoulders",
+            position: new THREE.Vector3(0, size.y * 0.75, 0),
+            size: new THREE.Vector3(size.x * 0.6, size.y * 0.1, size.z * 0.4)
           },
-          undefined,
-          function(error) {
-              console.error('Error loading model:', error);
+          {
+            name: "chest",
+            position: new THREE.Vector3(0, size.y * 0.60, size.z * 0.05),
+            size: new THREE.Vector3(size.x * 0.4, size.y * 0.15, size.z * 0.3)
+          },
+          {
+            name: "back",
+            position: new THREE.Vector3(0, size.y * 0.60, -size.z * 0.05),
+            size: new THREE.Vector3(size.x * 0.4, size.y * 0.15, size.z * 0.3)
+          },
+          {
+            name: "abs",
+            position: new THREE.Vector3(0, size.y * 0.40, size.z * 0.05),
+            size: new THREE.Vector3(size.x * 0.3, size.y * 0.15, size.z * 0.2)
+          },
+          {
+            name: "biceps_left",
+            position: new THREE.Vector3(-size.x * 0.4, size.y * 0.55, 0),
+            size: new THREE.Vector3(size.x * 0.2, size.y * 0.25, size.z * 0.3)
+          },
+          {
+            name: "biceps_right",
+            position: new THREE.Vector3(size.x * 0.4, size.y * 0.55, 0),
+            size: new THREE.Vector3(size.x * 0.2, size.y * 0.25, size.z * 0.3)
+          },
+          {
+            name: "legs",
+            position: new THREE.Vector3(0, size.y * 0.1, 0),
+            size: new THREE.Vector3(size.x * 0.4, size.y * 0.4, size.z * 0.4)
           }
-      );
-    
-      function animate() {
-          requestAnimationFrame(animate);
-          controls.update();
-          renderer.render(scene, camera);
+        ];
+
+        // Creiamo una mesh invisibile per ogni area
+        interactiveAreasData.forEach(area => {
+          const geometry = new THREE.BoxGeometry(area.size.x, area.size.y, area.size.z);
+          const material = new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            transparent: true,
+            opacity: 0, // invisibile ma rilevabile
+            depthTest: false
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.copy(area.position);
+          mesh.name = area.name;  // usato per mostrare rank
+          interactiveGroup.add(mesh);
+        });
+
+        // Posizione iniziale della camera e target
+        camera.position.set(0, 1.5, 2.5);
+        controls.target.set(0, 1, 0);
+        controls.update();
+
+        animate();
+      },
+      undefined,
+      function(error) {
+        console.error('Error loading model:', error);
       }
-    
-      renderer.domElement.addEventListener('mousemove', function(event) {
-          const rect = renderer.domElement.getBoundingClientRect();
-          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-          
-          raycaster.setFromCamera(mouse, camera);
-          const intersects = raycaster.intersectObjects(scene.children, true);
-          if (intersects.length > 0) {
-              const intersected = intersects[0].object;
-              if (muscleRanks[intersected.name]) {
-                  showTooltip(
-                      intersected.name.toUpperCase() + ': ' + muscleRanks[intersected.name], 
-                      event.clientX + 10, 
-                      event.clientY + 10
-                  );
-              } else {
-                  hideTooltip();
-              }
-          } else {
-              hideTooltip();
-          }
-      });
-    </script>
-    {% endblock %}
-        
+    );
+
+    // Loop di animazione
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Evento mousemove: raycast solo sugli oggetti nel gruppo interattivo
+    renderer.domElement.addEventListener('mousemove', function(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      // Filtra gli oggetti per prendere solo le mesh del nostro gruppo
+      const intersects = raycaster.intersectObjects(scene.children, true)
+        .filter(i => i.object.parent === scene.getObjectByName(modelPath) || i.object.parent.type === "Group");
+
+      // Un approccio migliore: cerca direttamente nel gruppo interattivo
+      // const intersects = raycaster.intersectObjects(interactiveGroup.children, true);
+
+      if (intersects.length > 0) {
+        const intersected = intersects[0].object;
+        if (muscleRanks[intersected.name] !== undefined) {
+          showTooltip(
+            intersected.name.toUpperCase() + ': ' + muscleRanks[intersected.name],
+            event.clientX + 10,
+            event.clientY + 10
+          );
+        } else {
+          hideTooltip();
+        }
+      } else {
+        hideTooltip();
+      }
+    });
+  </script>
+{% endblock %}
